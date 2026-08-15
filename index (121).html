@@ -1,0 +1,359 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  #dftbl-root {
+    --ink: #14231C;
+    --chalk: #F7F4EC;
+    --panel: #FFFFFF;
+    --kit-red: #C33B26;
+    --pitch: #1F4A38;
+    --gold: #BE8F1E;
+    --line: #E4E0D4;
+    --gray: #837F72;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--chalk);
+    min-height: 100%;
+    padding: 24px 20px 60px;
+    box-sizing: border-box;
+  }
+  #dftbl-root * { box-sizing: border-box; }
+
+  .dftbl-wrap { max-width: 980px; margin: 0 auto; }
+
+  .dftbl-head { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+  .dftbl-wordmark { font-family: 'Oswald', sans-serif; font-weight: 700; letter-spacing: 0.02em; font-size: 30px; text-transform: uppercase; line-height: 1; }
+  .dftbl-wordmark span { color: var(--kit-red); }
+  .dftbl-sub { font-size: 12.5px; color: var(--gray); margin-top: 4px; letter-spacing: 0.02em; }
+  .dftbl-share-note { font-size: 11.5px; color: var(--gray); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+
+  /* Scoreboard */
+  .dftbl-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .dftbl-card { background: var(--pitch); color: var(--chalk); border-radius: 8px; padding: 12px 14px; position: relative; overflow: hidden; }
+  .dftbl-card::after { content: ''; position: absolute; right: -10px; top: -10px; width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.06); }
+  .dftbl-card-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.75; font-weight: 600; }
+  .dftbl-card-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 26px; margin-top: 2px; }
+
+  /* Tabs */
+  .dftbl-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .dftbl-tab { font-family: 'Oswald', sans-serif; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.03em; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; color: var(--ink); }
+  .dftbl-tab.active { background: var(--ink); color: var(--chalk); border-color: var(--ink); }
+
+  /* Add form */
+  .dftbl-form { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+  .dftbl-form-title { font-family: 'Oswald', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray); margin-bottom: 10px; }
+  .dftbl-form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; align-items: end; }
+  .dftbl-field label { display: block; font-size: 10.5px; color: var(--gray); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dftbl-field select, .dftbl-field input {
+    width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; font-family: 'Inter', sans-serif; background: var(--chalk); color: var(--ink);
+  }
+  .dftbl-field select:focus, .dftbl-field input:focus { outline: 2px solid var(--pitch); outline-offset: 1px; }
+  .dftbl-add-btn { grid-column: span 4; margin-top: 4px; background: var(--kit-red); color: white; border: none; border-radius: 6px; padding: 9px 14px; font-family: 'Oswald', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; cursor: pointer; }
+  .dftbl-add-btn:hover { background: #A72F1E; }
+  .dftbl-add-btn:disabled { background: var(--gray); cursor: not-allowed; }
+
+  /* Table */
+  .dftbl-table-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+  table.dftbl-table { width: 100%; min-width: 900px; border-collapse: collapse; font-size: 13px; }
+  .dftbl-table thead th { text-align: left; font-family: 'Oswald', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray); padding: 10px 10px; border-bottom: 1px solid var(--line); background: #FBFAF6; }
+  .dftbl-table tbody td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .dftbl-table tbody tr:last-child td { border-bottom: none; }
+  .dftbl-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 12px; background: var(--chalk); border: 1px solid var(--line); border-radius: 4px; padding: 2px 7px; }
+  .dftbl-qty-input { width: 56px; padding: 5px 6px; border: 1px solid var(--line); border-radius: 5px; font-family: 'JetBrains Mono', monospace; font-weight: 700; text-align: center; background: var(--chalk); }
+  .dftbl-del { border: none; background: none; color: var(--gray); cursor: pointer; font-size: 15px; padding: 2px 6px; }
+  .dftbl-del:hover { color: var(--kit-red); }
+  .dftbl-empty { padding: 34px 14px; text-align: center; color: var(--gray); font-size: 13px; }
+
+  .dftbl-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 10px; }
+  .dftbl-totals { font-size: 12.5px; color: var(--gray); }
+  .dftbl-totals b { color: var(--ink); }
+  .dftbl-export { background: var(--ink); color: var(--chalk); border: none; border-radius: 6px; padding: 8px 14px; font-family: 'Oswald', sans-serif; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.03em; cursor: pointer; }
+  .dftbl-export:hover { background: #0B140F; }
+  .dftbl-status { font-size: 11px; color: var(--gray); }
+</style>
+
+<div id="dftbl-root">
+  <div class="dftbl-wrap">
+    <div class="dftbl-head">
+      <div>
+        <div class="dftbl-wordmark">DERBY<span>FTBL</span> STOCK</div>
+        <div class="dftbl-sub" id="dftbl-status">loading…</div>
+      </div>
+      <div class="dftbl-share-note">Shared count — everyone using this link sees the same list</div>
+    </div>
+
+    <div class="dftbl-board" id="dftbl-board"></div>
+
+    <div class="dftbl-tabs" id="dftbl-tabs"></div>
+
+    <div class="dftbl-form">
+      <div class="dftbl-form-title">Add item</div>
+      <div class="dftbl-form-grid">
+        <div class="dftbl-field">
+          <label>Category</label>
+          <select id="f-category"></select>
+        </div>
+        <div class="dftbl-field">
+          <label>Item type</label>
+          <select id="f-itemtype"></select>
+        </div>
+        <div class="dftbl-field">
+          <label>Kit type</label>
+          <select id="f-kittype"></select>
+        </div>
+        <div class="dftbl-field">
+          <label>Club</label>
+          <input id="f-club" type="text" list="dftbl-club-list" placeholder="Search or type a club" />
+          <datalist id="dftbl-club-list"></datalist>
+        </div>
+        <div class="dftbl-field">
+          <label>Color</label>
+          <input id="f-color" type="text" list="dftbl-color-list" placeholder="Search or type a color" />
+          <datalist id="dftbl-color-list"></datalist>
+        </div>
+        <div class="dftbl-field">
+          <label>Size</label>
+          <select id="f-size"></select>
+        </div>
+        <div class="dftbl-field">
+          <label>Player name <span style="text-transform:none;opacity:.7;">(if applicable)</span></label>
+          <input id="f-player" type="text" placeholder="e.g. Mbappé" />
+        </div>
+        <div class="dftbl-field">
+          <label>Qty counted</label>
+          <input id="f-qty" type="number" min="0" step="1" placeholder="0" />
+        </div>
+        <button class="dftbl-add-btn" id="f-submit">+ Add to count</button>
+      </div>
+    </div>
+
+    <div class="dftbl-table-wrap">
+      <table class="dftbl-table">
+        <thead>
+          <tr>
+            <th>Category</th><th>Item type</th><th>Kit type</th><th>Club</th><th>Player name</th><th>Color</th><th>Size</th><th>Qty</th><th>Location</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="dftbl-tbody"></tbody>
+      </table>
+      <div class="dftbl-empty" id="dftbl-empty" style="display:none;">No items counted yet — add your first one above.</div>
+    </div>
+
+    <div class="dftbl-footer">
+      <div class="dftbl-totals" id="dftbl-totals"></div>
+      <button class="dftbl-export" id="dftbl-export-btn">Export to Excel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const CATS = {
+    "Kids Kit": { itemTypes: ["Kit (Shirt+Shorts)", "Shirt Only", "Shorts Only"], sizes: ["16","18","20","22","24","26","28"] },
+    "Men's Jersey": { itemTypes: ["Jersey"], sizes: ["S","M","L","XL","XXL","3XL"] },
+    "Polo": { itemTypes: ["Polo"], sizes: ["S","M","L","XL","XXL","3XL"] },
+    "Tracksuit": { itemTypes: ["Tracksuit Top","Tracksuit Bottom","Full Tracksuit"], sizes: ["S","M","L","XL","XXL","3XL"] }
+  };
+  const CAT_NAMES = Object.keys(CATS);
+  const STORAGE_KEY = "stock-items";
+  const KIT_TYPES = ["N/A", "Home", "Away", "Third", "Fourth", "Goalkeeper", "Retro / Special"];
+
+  const CLUBS = [
+    // Premier League
+    "Manchester United","Manchester City","Liverpool","Arsenal","Chelsea","Tottenham Hotspur",
+    "Newcastle United","Aston Villa","West Ham United","Everton",
+    // La Liga
+    "Real Madrid","Barcelona","Atletico Madrid","Sevilla","Real Sociedad","Athletic Bilbao","Valencia",
+    // Serie A
+    "Juventus","AC Milan","Inter Milan","Napoli","AS Roma","Lazio","Atalanta",
+    // Bundesliga
+    "Bayern Munich","Borussia Dortmund","RB Leipzig","Bayer Leverkusen","Schalke 04",
+    // Ligue 1
+    "Paris Saint-Germain","Marseille","Monaco","Lyon",
+    // Other Europe
+    "Ajax","PSV Eindhoven","Porto","Benfica","Sporting CP","Celtic","Rangers","Galatasaray","Fenerbahce",
+    // Kazakhstan Premier League
+    "FC Kairat","FC Astana","FC Atyrau","Ordabasy","Tobol","Zhetysu","Kaisar Kyzylorda","Aktobe",
+    // National teams
+    "Kazakhstan","Argentina","Brazil","France","Germany","Spain","England","Portugal","Netherlands",
+    "Italy","Belgium","Croatia","Uruguay","Turkiye","Morocco"
+  ];
+  const COLORS = [
+    "White","Black","Red","Blue","Navy","Sky Blue","Royal Blue","Green","Dark Green","Yellow","Gold",
+    "Orange","Purple","Maroon","Burgundy","Claret","Pink","Grey","Silver","Teal","Multicolor"
+  ];
+
+  let items = [];
+  let activeTab = "All";
+
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $("dftbl-status");
+  const boardEl = $("dftbl-board");
+  const tabsEl = $("dftbl-tabs");
+  const tbody = $("dftbl-tbody");
+  const emptyEl = $("dftbl-empty");
+  const totalsEl = $("dftbl-totals");
+
+  const catSel = $("f-category");
+  const typeSel = $("f-itemtype");
+  const kitTypeSel = $("f-kittype");
+  const sizeSel = $("f-size");
+  const clubInput = $("f-club");
+  const colorInput = $("f-color");
+  const playerInput = $("f-player");
+  const qtyInput = $("f-qty");
+  const submitBtn = $("f-submit");
+
+  function fillOptions(select, options) {
+    select.innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join("");
+  }
+  function fillDatalist(id, options) {
+    $(id).innerHTML = options.map(o => `<option value="${o}"></option>`).join("");
+  }
+
+  function refreshDependentFields() {
+    const cat = catSel.value;
+    const def = CATS[cat];
+    fillOptions(typeSel, def.itemTypes);
+    fillOptions(sizeSel, def.sizes);
+  }
+
+  fillOptions(catSel, CAT_NAMES);
+  fillOptions(kitTypeSel, KIT_TYPES);
+  fillDatalist("dftbl-club-list", CLUBS);
+  fillDatalist("dftbl-color-list", COLORS);
+  refreshDependentFields();
+  catSel.addEventListener("change", refreshDependentFields);
+
+  function uid() { return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  async function load() {
+    statusEl.textContent = "loading…";
+    try {
+      const res = await window.storage.get(STORAGE_KEY, true);
+      items = res && res.value ? JSON.parse(res.value) : [];
+    } catch (e) {
+      items = [];
+    }
+    statusEl.textContent = items.length ? `${items.length} SKU${items.length===1?'':'s'} on file` : "no items yet — add your first below";
+    render();
+  }
+
+  async function save() {
+    try {
+      const result = await window.storage.set(STORAGE_KEY, JSON.stringify(items), true);
+      if (!result) statusEl.textContent = "⚠ could not save — try again";
+      else statusEl.textContent = `${items.length} SKU${items.length===1?'':'s'} on file · saved`;
+    } catch (e) {
+      statusEl.textContent = "⚠ storage error — changes may not persist";
+    }
+  }
+
+  function renderBoard() {
+    boardEl.innerHTML = CAT_NAMES.map(cat => {
+      const pieces = items.filter(i => i.category === cat).reduce((s,i)=>s+Number(i.qty||0),0);
+      const skus = items.filter(i => i.category === cat).length;
+      return `<div class="dftbl-card">
+        <div class="dftbl-card-label">${cat}</div>
+        <div class="dftbl-card-num">${pieces}</div>
+        <div class="dftbl-card-label" style="margin-top:2px;">${skus} SKU${skus===1?'':'s'}</div>
+      </div>`;
+    }).join("");
+  }
+
+  function renderTabs() {
+    const tabs = ["All", ...CAT_NAMES];
+    tabsEl.innerHTML = tabs.map(t => `<button class="dftbl-tab ${t===activeTab?'active':''}" data-tab="${t}">${t}</button>`).join("");
+    tabsEl.querySelectorAll(".dftbl-tab").forEach(btn => {
+      btn.addEventListener("click", () => { activeTab = btn.dataset.tab; render(); });
+    });
+  }
+
+  function renderTable() {
+    const rows = activeTab === "All" ? items : items.filter(i => i.category === activeTab);
+    if (!rows.length) {
+      tbody.innerHTML = "";
+      emptyEl.style.display = "block";
+    } else {
+      emptyEl.style.display = "none";
+      tbody.innerHTML = rows.map(i => `
+        <tr data-id="${i.id}">
+          <td>${i.category}</td>
+          <td>${i.itemType}</td>
+          <td>${i.kitType && i.kitType !== 'N/A' ? i.kitType : '—'}</td>
+          <td>${i.club || '—'}</td>
+          <td>${i.playerName || '—'}</td>
+          <td>${i.color || '—'}</td>
+          <td><span class="dftbl-tag">${i.size}</span></td>
+          <td><input class="dftbl-qty-input" type="number" min="0" step="1" value="${i.qty}" data-id="${i.id}" /></td>
+          <td>${i.location || '—'}</td>
+          <td><button class="dftbl-del" data-id="${i.id}" title="Remove">✕</button></td>
+        </tr>
+      `).join("");
+      tbody.querySelectorAll(".dftbl-qty-input").forEach(inp => {
+        inp.addEventListener("change", (e) => {
+          const id = e.target.dataset.id;
+          const it = items.find(x => x.id === id);
+          if (it) { it.qty = Math.max(0, parseInt(e.target.value)||0); save().then(render); }
+        });
+      });
+      tbody.querySelectorAll(".dftbl-del").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const id = e.target.dataset.id;
+          items = items.filter(x => x.id !== id);
+          save().then(render);
+        });
+      });
+    }
+  }
+
+  function renderTotals() {
+    const totalPieces = items.reduce((s,i)=>s+Number(i.qty||0),0);
+    totalsEl.innerHTML = `<b>${items.length}</b> SKUs &nbsp;·&nbsp; <b>${totalPieces}</b> pieces total`;
+  }
+
+  function render() {
+    renderBoard();
+    renderTabs();
+    renderTable();
+    renderTotals();
+  }
+
+  submitBtn.addEventListener("click", async () => {
+    const category = catSel.value;
+    const itemType = typeSel.value;
+    const kitType = kitTypeSel.value;
+    const size = sizeSel.value;
+    const club = clubInput.value.trim();
+    const color = colorInput.value.trim();
+    const playerName = playerInput.value.trim();
+    const qty = Math.max(0, parseInt(qtyInput.value) || 0);
+
+    submitBtn.disabled = true;
+    items.push({ id: uid(), category, itemType, kitType, club, playerName, color, size, qty, location: "" });
+    await save();
+    render();
+    clubInput.value = ""; colorInput.value = ""; playerInput.value = ""; qtyInput.value = "";
+    submitBtn.disabled = false;
+    clubInput.focus();
+  });
+
+  $("dftbl-export-btn").addEventListener("click", () => {
+    const headers = ["Category","Item Type","Kit Type","Club","Player Name","Color","Size","Qty","Location"];
+    const rows = items.map(i => [
+      i.category, i.itemType, (i.kitType && i.kitType !== 'N/A') ? i.kitType : "",
+      i.club || "", i.playerName || "", i.color || "", i.size, i.qty, i.location || ""
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = [
+      {wch:12},{wch:16},{wch:14},{wch:20},{wch:16},{wch:12},{wch:8},{wch:8},{wch:12}
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Stock Count");
+    XLSX.writeFile(wb, "derbyftbl_stock_count.xlsx");
+  });
+
+  load();
+})();
+</script>
